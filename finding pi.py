@@ -14,7 +14,7 @@ def solution(minterm):
 
     sortedMin = [[] for col in range(numVar+1)] #합칠 minterm이 모인 배열
     sortedMin2 = [[] for col in range(numVar+1)] #minterm이 합쳐진 결과들이 모이는 배열
-    answer = [] # pi가 모이는 배열
+    answer = [] # nepi가 모이는 배열
     for i in range(size): # 입력받은 minterm을 2진수로 변환해서 sortedMin에 1의 개수에 따라 저장 (sortedMin: 2차원배열)
         minstr = format(minterm[i], 'b')
         while(len(minstr)<numVar):
@@ -49,7 +49,7 @@ def solution(minterm):
                     answer.append(sortedMin[i][j])
                     for m in piConsist[sortedMin[i][j]]:
                         mintermConsist[m].append(sortedMin[i][j])
-                elif (sortedMin[i][j] in piConsist): # 합쳐졌다면 해당 값은 pi가 아니므로 piConsist배열에 있다면 삭제 
+                elif (sortedMin[i][j] in piConsist): # 합쳐졌다면 해당 값은 pi가 아니므로 piConsist에 있다면 삭제 
                     del piConsist[sortedMin[i][j]]
         sortedMin = copy.deepcopy(sortedMin2) # 합쳐진 결과들이 모인 배열을 다시 합치는 배열로
         sortedMin2 = [[] for col in range(numVar-k)] # 결과 배열은 다시 초기화
@@ -62,7 +62,7 @@ def solution(minterm):
     for i in range(len(answer)): #정답 형식에 맞게 2를 -로 변경
         answer[i] = answer[i].replace('2','-')
     
-    print('--------------------PI(except EPI)--------------------')
+    print('--------------------NEPI--------------------')
     for pi in answer:
         if pi not in epi: print(pi, end=', ')
     print()
@@ -89,26 +89,29 @@ def combine(m1, m2):
     if(count == 1): return combined 
     else: return 0 #안합쳐지면 0리턴
 
-#ColumnDominance 구현, return값: 삭제된 column이 모인 배열
+#ColumnDominance 구현, return값: 삭제된 column이 모인 리스트
 def columnDominance(mintermConsist, deletedColumn):
     tempMC = copy.deepcopy(mintermConsist)
     mintermConsistKeys = list(mintermConsist.keys())
     for i in range(len(mintermConsist)-1):
         for j in range(i+1, len(mintermConsist)):
-            l = tempMC[mintermConsistKeys[i]]
+            l = tempMC[mintermConsistKeys[i]] # mintermConsist = {0: ['002'], 1: ['002', '201']}에서 minterm 0과 1을 비교한다면 l = ['002', '020'], l2 = ['002', '201'] 
             l2 = tempMC[mintermConsistKeys[i+1]]
-            tempSet = set(l+l2) #합친 후 중복 제거
+            tempSet = set(l+l2) #합친 후 중복 제거 tempSet = {'002', '201'}
             if(len(l) == len(tempSet) or len(l2) == len(tempSet)): # 합친 set의 길이가 합치는데 사용한 리스트 중 하나와 길이가 같다면 dominance가 존재함
+                print("Column Dominance detected between",mintermConsistKeys[i],":",l,"and",mintermConsistKeys[j],":",l2,end=', ')
                 if(len(l) >= len(l2)):
-                    deletedColumn.append(mintermConsistKeys[i]) 
+                    print("deleted",mintermConsistKeys[i])
+                    deletedColumn.append(mintermConsistKeys[i])
                     del mintermConsist[mintermConsistKeys[i]]
                 else:
+                    print("deleted",mintermConsistKeys[j])
                     deletedColumn.append(mintermConsistKeys[j]) 
                     del mintermConsist[mintermConsistKeys[j]]
                 return columnDominance(mintermConsist, deletedColumn)
     return deletedColumn
 
-#RowDominance 구현, return값: 삭제된 row가 모인 배열
+#RowDominance 구현, return값: 삭제된 row가 모인 리스트
 def rowDominance(piConsist, deletedRow):
     tempPC = copy.deepcopy(piConsist)
     piConsistKeys = list(piConsist.keys())
@@ -118,10 +121,13 @@ def rowDominance(piConsist, deletedRow):
             l2 = tempPC[piConsistKeys[j]]
             tempSet = set(l+l2)
             if(len(l) == len(tempSet) or len(l2) == len(tempSet)):
+                print("Row Dominance detected between",piConsistKeys[i],":",l,"and",piConsistKeys[j],":",l2,end=', ')
                 if(len(l) >= len(l2)):
+                    print("deleted",piConsistKeys[j])
                     deletedRow.append(piConsistKeys[j])
                     del piConsist[piConsistKeys[j]]
                 else:
+                    print("deleted",piConsistKeys[i])
                     deletedRow.append(piConsistKeys[i]) 
                     del piConsist[piConsistKeys[i]]
                 return rowDominance(piConsist, deletedRow)
@@ -190,6 +196,8 @@ def testRandom(numval, nummin):
     if(nummin > 2**numval-1):
         print("Error: too many minterms")
         return
+    elif(nummin < 1):
+        print("Error: number of minterms should be more than 0")
     problem = [numval, nummin]
     while(len(problem) < nummin+2):
         a = random.randint(0, 2**numval-1)
@@ -198,10 +206,8 @@ def testRandom(numval, nummin):
 
 #solution([3, 6, 0, 1, 2, 5, 6, 7])
 # solution([4, 8, 0, 4, 8, 10, 11, 12, 13, 15])
-#solution([4,11,0,2,5,6,7,8,10,12,13,14,15])
 # solution([5, 25, 0,1,2,3,5,6,7,10,11,14,15,16,17,18,20,21,22,23,24,26,27,28,29,30,31])
-#solution([4,11,0,2,5,6,7,8,10,12,13,14,15])
-#solution([4,12,0,2,3,4,5,6,7,8,9,10,11,12,13])
-#solution([3,6,0,1,2,5,6,7])) #no epi
+# solution([4,11,0,2,5,6,7,8,10,12,13,14,15])
+# solution([3,6,0,1,2,5,6,7]) #no epi
 
-testRandom(8,100)
+testRandom(10,550)
